@@ -122,6 +122,12 @@ First, install [Rust](https://www.rust-lang.org/tools/install) (using the recomm
 cargo install spotify-tui
 ```
 
+On arch, I had to set these environment variables to build locally:
+
+```bash
+OPENSSL_LIB_DIR=/usr/lib/openssl-1.1/ OPENSSL_INCLUDE_DIR=/usr/include/openssl-1.1/ cargo build .
+```
+
 This method will build the binary from source.
 
 To update, run the same command again.
