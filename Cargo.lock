@@ -1423,6 +1423,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
+name = "playerctl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46e64d4850dfbd759aa3f4e303674ee3f697b9548ab60dc0e2571dc43568a7c7"
+
+[[package]]
 name = "png"
 version = "0.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1944,6 +1950,7 @@ dependencies = [
  "clap",
  "crossterm",
  "dirs",
+ "playerctl",
  "rand 0.8.5",
  "rspotify",
  "serde",

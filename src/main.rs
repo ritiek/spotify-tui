@@ -289,7 +289,7 @@ async fn start_ui(user_config: UserConfig, app: &Arc<Mutex<App>>) -> Result<()> 
     let mut app = app.lock().await;
     // Get the size of the screen on each loop to account for resize event
     if let Ok(size) = terminal.backend().size() {
-      // Reset the help menu is the terminal was resized
+      // Reset the help menu is the terminal was resizedrazorpay_promotional_payment_webhook_mumbai
       if is_first_render || app.size != size {
         app.help_menu_max_lines = 0;
         app.help_menu_offset = 0;

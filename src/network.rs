@@ -717,6 +717,7 @@ impl<'a> Network<'a> {
     uris: Option<Vec<String>>,
     offset: Option<usize>,
   ) {
+    // TODO: Get custom URIs to work with playerctl and spotify
     let (uris, context_uri) = if context_uri.is_some() {
       (None, context_uri)
     } else if uris.is_some() {
@@ -727,25 +728,31 @@ impl<'a> Network<'a> {
 
     let offset = offset.and_then(|o| for_position(o as u32));
 
-    let result = match &self.client_config.device_id {
-      Some(device_id) => {
-        match self
-          .spotify
-          .start_playback(
-            Some(device_id.to_string()),
-            context_uri.clone(),
-            uris.clone(),
-            offset.clone(),
-            None,
-          )
-          .await
-        {
-          Ok(()) => Ok(()),
-          Err(e) => Err(anyhow!(e)),
-        }
-      }
-      None => Err(anyhow!("No device_id selected")),
-    };
+    // let result = match &self.client_config.device_id {
+    //   Some(device_id) => {
+    //     match self
+    //       .spotify
+    //       .start_playback(
+    //         Some(device_id.to_string()),
+    //         context_uri.clone(),
+    //         uris.clone(),
+    //         offset.clone(),
+    //         None,
+    //       )
+    //       .await
+    //     {
+    //       Ok(()) => Ok(()),
+    //       Err(e) => Err(anyhow!(e)),
+    //     }
+    //   }
+    //   None => Err(anyhow!("No device_id selected")),
+    // };
+
+    // playerctl::PlayerCtl::open(context_uri.unwrap().as_str());
+    dbg!(&context_uri);
+    // let link = "https://open.spotify.com/track/73wOaDjTnfhOS4UvtKFzMY?si=d1b6c7de08dc4b25";
+    // playerctl::PlayerCtl::open(link);
+    let result = Ok(());
 
     match result {
       Ok(()) => {
@@ -831,58 +838,78 @@ impl<'a> Network<'a> {
 
   async fn repeat(&mut self, repeat_state: RepeatState) {
     let next_repeat_state = match repeat_state {
-      RepeatState::Off => RepeatState::Context,
-      RepeatState::Context => RepeatState::Track,
-      RepeatState::Track => RepeatState::Off,
+      RepeatState::Off => {
+        playerctl::PlayerCtl::loop_set(playerctl::LoopStatus::Playlist);
+        RepeatState::Context
+      },
+      RepeatState::Context => {
+        playerctl::PlayerCtl::loop_set(playerctl::LoopStatus::Track);
+        RepeatState::Track
+      },
+      RepeatState::Track => {
+        playerctl::PlayerCtl::loop_set(playerctl::LoopStatus::None);
+        RepeatState::Off
+      },
     };
-    match self
-      .spotify
-      .repeat(next_repeat_state, self.client_config.device_id.clone())
-      .await
-    {
-      Ok(()) => {
-        let mut app = self.app.lock().await;
-        if let Some(current_playback_context) = &mut app.current_playback_context {
-          current_playback_context.repeat_state = next_repeat_state;
-        };
-      }
-      Err(e) => {
-        self.handle_error(anyhow!(e)).await;
-      }
+    let mut app = self.app.lock().await;
+    if let Some(current_playback_context) = &mut app.current_playback_context {
+      current_playback_context.repeat_state = next_repeat_state;
     };
+    // match self
+    //   .spotify
+    //   .repeat(next_repeat_state, self.client_config.device_id.clone())
+    //   .await
+    // {
+    //   Ok(()) => {
+    //     let mut app = self.app.lock().await;
+    //     if let Some(current_playback_context) = &mut app.current_playback_context {
+    //       current_playback_context.repeat_state = next_repeat_state;
+    //     };
+    //   }
+    //   Err(e) => {
+    //     self.handle_error(anyhow!(e)).await;
+    //   }
+    // };
   }
 
   async fn pause_playback(&mut self) {
-    match self
-      .spotify
-      .pause_playback(self.client_config.device_id.clone())
-      .await
-    {
-      Ok(()) => {
-        self.get_current_playback().await;
-      }
-      Err(e) => {
-        self.handle_error(anyhow!(e)).await;
-      }
-    };
+    playerctl::PlayerCtl::pause();
+    self.get_current_playback().await;
+    // match self
+    //   .spotify
+    //   .pause_playback(self.client_config.device_id.clone())
+    //   .await
+    // {
+    //   Ok(()) => {
+    //     self.get_current_playback().await;
+    //   }
+    //   Err(e) => {
+    //     self.handle_error(anyhow!(e)).await;
+    //   }
+    // };
   }
 
   async fn change_volume(&mut self, volume_percent: u8) {
-    match self
-      .spotify
-      .volume(volume_percent, self.client_config.device_id.clone())
-      .await
-    {
-      Ok(()) => {
-        let mut app = self.app.lock().await;
-        if let Some(current_playback_context) = &mut app.current_playback_context {
-          current_playback_context.device.volume_percent = volume_percent.into();
-        };
-      }
-      Err(e) => {
-        self.handle_error(anyhow!(e)).await;
-      }
+    playerctl::PlayerCtl::volume(volume_percent.into());
+    let mut app = self.app.lock().await;
+    if let Some(current_playback_context) = &mut app.current_playback_context {
+      current_playback_context.device.volume_percent = volume_percent.into();
     };
+    // match self
+    //   .spotify
+    //   .volume(volume_percent, self.client_config.device_id.clone())
+    //   .await
+    // {
+    //   Ok(()) => {
+    //     let mut app = self.app.lock().await;
+    //     if let Some(current_playback_context) = &mut app.current_playback_context {
+    //       current_playback_context.device.volume_percent = volume_percent.into();
+    //     };
+    //   }
+    //   Err(e) => {
+    //     self.handle_error(anyhow!(e)).await;
+    //   }
+    // };
   }
 
   async fn get_artist(
